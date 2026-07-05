@@ -19,16 +19,21 @@
 <style>
   :root{
     --bg:#0B0F19;
-    --surface:#131826;
-    --surface-2:#1a2032;
+    --bg-deep:#05070c;
+    --surface:rgba(255,255,255,0.045);
+    --surface-solid:#131826;
     --primary:#5B8DEF;
+    --primary-glow:rgba(91,141,239,0.45);
     --accent:#FFB020;
+    --accent-glow:rgba(255,176,32,0.5);
     --success:#34D399;
     --text:#F5F7FB;
-    --text-dim:rgba(245,247,251,0.62);
-    --text-faint:rgba(245,247,251,0.38);
+    --text-dim:rgba(245,247,251,0.64);
+    --text-faint:rgba(245,247,251,0.4);
     --border:rgba(255,255,255,0.08);
-    --radius:12px;
+    --border-hover:rgba(255,255,255,0.18);
+    --radius:20px;
+    --ease:cubic-bezier(0.16,1,0.3,1);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth;}
@@ -38,114 +43,135 @@
     font-family:'DM Sans',sans-serif;
     line-height:1.6;
     overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
   }
   h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.02em;}
   code,.mono{font-family:'JetBrains Mono',monospace;}
   a{color:inherit;text-decoration:none;}
-  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
   section{position:relative;}
+  svg.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.125em;}
 
-  /* background ambient glow */
-  body::before{
-    content:"";
-    position:fixed;
-    top:-20%;
-    left:50%;
-    transform:translateX(-50%);
-    width:1400px;
-    height:1000px;
-    background:radial-gradient(ellipse at center, rgba(91,141,239,0.14) 0%, rgba(255,176,32,0.07) 35%, transparent 70%);
-    pointer-events:none;
-    z-index:0;
+  /* ---------- AMBIENT BACKGROUND ---------- */
+  .ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:0.16;will-change:transform;}
+  .blob-1{width:640px;height:640px;top:-220px;left:8%;background:var(--primary);animation:drift1 26s ease-in-out infinite;}
+  .blob-2{width:560px;height:560px;top:180px;right:6%;background:var(--accent);opacity:0.12;animation:drift2 32s ease-in-out infinite;}
+  .blob-3{width:480px;height:480px;bottom:-160px;left:38%;background:var(--success);opacity:0.08;animation:drift1 38s ease-in-out infinite reverse;}
+  @keyframes drift1{0%,100%{transform:translate(0,0);}50%{transform:translate(60px,50px);}}
+  @keyframes drift2{0%,100%{transform:translate(0,0);}50%{transform:translate(-50px,60px);}}
+  @media (prefers-reduced-motion: reduce){
+    .blob{animation:none !important;}
   }
 
   /* ---------- NAV ---------- */
   nav{
     position:sticky;top:0;z-index:50;
-    backdrop-filter:blur(14px);
-    background:rgba(11,15,25,0.72);
+    backdrop-filter:blur(16px) saturate(140%);
+    background:rgba(11,15,25,0.68);
     border-bottom:1px solid var(--border);
   }
   nav .wrap{display:flex;align-items:center;justify-content:space-between;height:72px;}
-  .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;}
-  .logo-orbs{position:relative;width:26px;height:20px;flex-shrink:0;}
-  .logo-orbs span{position:absolute;top:0;width:16px;height:16px;border-radius:50%;}
-  .logo-orbs span:first-child{left:0;background:var(--primary);}
-  .logo-orbs span:last-child{left:10px;background:var(--accent);mix-blend-mode:screen;}
+  .logo{display:flex;align-items:center;gap:9px;font-size:19px;font-weight:700;}
+  .logo svg{color:var(--accent);}
+  .nav-right{display:flex;align-items:center;gap:22px;}
+  .nav-link{font-size:14.5px;color:var(--text-dim);transition:color .2s var(--ease);white-space:nowrap;}
+  .nav-link:hover{color:var(--text);}
+  @media (max-width:640px){
+    .nav-link{display:none;}
+    nav .wrap{height:64px;}
+  }
+
   .btn{
+    position:relative;
     display:inline-flex;align-items:center;gap:8px;
-    padding:12px 22px;border-radius:999px;
-    font-weight:700;font-size:15px;
+    padding:13px 24px;border-radius:999px;
+    font-weight:700;font-size:15px;font-family:'DM Sans',sans-serif;
     border:1px solid transparent;
-    transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    transition:transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease), background .3s var(--ease);
     cursor:pointer;
   }
-  .btn:hover{transform:translateY(-2px);}
-  .btn-accent{background:var(--accent);color:#1A1200;box-shadow:0 0 0 rgba(255,176,32,0);}
-  .btn-accent:hover{box-shadow:0 8px 30px -8px rgba(255,176,32,0.55);}
-  .btn-ghost{border-color:var(--border);color:var(--text);background:transparent;}
-  .btn-ghost:hover{border-color:rgba(255,255,255,0.24);}
-  .btn-sm{padding:9px 16px;font-size:14px;}
+  .btn:focus-visible{outline:2px solid var(--primary);outline-offset:3px;}
+  .btn-accent{background:linear-gradient(180deg,#FFC24D,var(--accent));color:#1A1200;box-shadow:0 0 0 rgba(255,176,32,0);}
+  .btn-accent:hover{box-shadow:0 10px 36px -8px var(--accent-glow);}
+  .btn-ghost{border-color:var(--border);color:var(--text);background:rgba(255,255,255,0.02);}
+  .btn-ghost:hover{border-color:var(--border-hover);background:rgba(255,255,255,0.05);}
+  .btn-sm{padding:9px 18px;font-size:14px;}
+  .btn svg.icon{width:16px;height:16px;transition:transform .3s var(--ease);}
+  .btn:hover svg.icon{transform:translate(2px,-2px);}
 
   /* ---------- HERO ---------- */
-  .hero{padding:96px 0 64px;text-align:center;}
+  .hero{padding:104px 0 40px;text-align:center;}
   .badge{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:7px 16px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:9px;
+    padding:8px 18px;border-radius:999px;
     background:var(--surface);border:1px solid var(--border);
-    font-size:13px;color:var(--text-dim);margin-bottom:32px;
+    font-size:13px;color:var(--text-dim);margin-bottom:36px;
+    backdrop-filter:blur(10px);
   }
-  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);}
-  .hero h1{font-size:clamp(40px,7vw,76px);line-height:1.04;margin-bottom:22px;}
-  .hero h1 .accent-text{color:var(--accent);}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 10px var(--success);}
+  .hero h1{font-size:clamp(42px,8vw,92px);line-height:1.02;margin-bottom:26px;letter-spacing:-0.03em;}
+  .hero h1 .grad{
+    background:linear-gradient(100deg,var(--primary) 10%,var(--accent) 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
   .hero p.sub{
-    font-size:clamp(16px,2vw,20px);color:var(--text-dim);
-    max-width:560px;margin:0 auto 40px;
+    font-size:clamp(16.5px,2vw,20px);color:var(--text-dim);
+    max-width:600px;margin:0 auto 40px;
   }
-  .hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
+  .hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:22px;}
   .hero-note{font-size:13px;color:var(--text-faint);}
 
   /* ---------- LIQUID CONVERGENCE VISUAL ---------- */
-  .convergence-stage{
-    position:relative;
-    width:100%;
-    max-width:520px;
-    height:280px;
-    margin:56px auto 0;
-  }
+  .convergence-stage{position:relative;width:100%;max-width:480px;height:250px;margin:64px auto 0;}
   .convergence-stage svg{width:100%;height:100%;overflow:visible;}
-  .orb{filter:blur(0.5px);}
   .orb-base{fill:var(--primary);}
   .orb-arb{fill:var(--accent);}
-  .orb-base, .orb-arb{
-    animation:pulse 3.2s ease-in-out infinite;
-  }
-  @keyframes pulse{
-    0%,100%{r:64;}
-    50%{r:70;}
-  }
-  .conv-label{
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;fill:var(--text-faint);
-  }
-  .conv-amount{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:700;font-size:34px;fill:var(--text);
-  }
+  .orb-base,.orb-arb{animation:pulse 3.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{r:62;}50%{r:68;}}
+  .conv-label{font-family:'JetBrains Mono',monospace;font-size:12px;fill:var(--text-faint);letter-spacing:0.05em;}
+  .conv-amount{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:32px;fill:var(--text);}
+  @media (prefers-reduced-motion: reduce){.orb-base,.orb-arb{animation:none;}}
 
   /* ---------- SECTION HEADERS ---------- */
-  .section-head{text-align:center;max-width:640px;margin:0 auto 56px;}
+  .section-head{text-align:center;max-width:620px;margin:0 auto 60px;}
   .eyebrow{
-    font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+    font-size:12.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
     color:var(--accent);margin-bottom:14px;display:block;
   }
-  .section-head h2{font-size:clamp(28px,4vw,42px);margin-bottom:16px;}
+  .section-head h2{font-size:clamp(28px,4vw,44px);margin-bottom:16px;line-height:1.1;}
   .section-head p{color:var(--text-dim);font-size:17px;}
 
-  section.py{padding:88px 0;}
+  section.py{padding:96px 0;}
   .border-top{border-top:1px solid var(--border);}
 
-  /* ---------- FEATURE GRID ---------- */
+  /* ---------- GLASS CARD ---------- */
+  .card{
+    background:linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015));
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:30px;
+    backdrop-filter:blur(10px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
+    transition:border-color .35s var(--ease), transform .35s var(--ease), box-shadow .35s var(--ease);
+  }
+  .card:hover{
+    border-color:var(--border-hover);
+    transform:translateY(-5px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px -24px rgba(0,0,0,0.6);
+  }
+  .card .icon-box{
+    width:46px;height:46px;border-radius:13px;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:20px;
+  }
+  .card .icon-box svg{width:22px;height:22px;}
+  .icon-blue{background:rgba(91,141,239,0.14);color:var(--primary);}
+  .icon-amber{background:rgba(255,176,32,0.14);color:var(--accent);}
+  .icon-green{background:rgba(52,211,153,0.14);color:var(--success);}
+  .card h3{font-size:17.5px;margin-bottom:10px;}
+  .card p{color:var(--text-dim);font-size:14.5px;}
+
   .grid{display:grid;gap:20px;}
   .grid-4{grid-template-columns:repeat(4,1fr);}
   .grid-3{grid-template-columns:repeat(3,1fr);}
@@ -153,155 +179,120 @@
   @media (max-width:920px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(1,1fr);}}
   @media (max-width:640px){.grid-4{grid-template-columns:1fr;} .grid-2{grid-template-columns:1fr;}}
 
-  .card{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:28px;
-    transition:border-color .2s ease, transform .2s ease;
-  }
-  .card:hover{border-color:rgba(255,255,255,0.18);transform:translateY(-3px);}
-  .card .icon{
-    width:44px;height:44px;border-radius:10px;
-    display:flex;align-items:center;justify-content:center;
-    margin-bottom:18px;font-size:20px;
-  }
-  .icon-blue{background:rgba(91,141,239,0.16);}
-  .icon-amber{background:rgba(255,176,32,0.16);}
-  .icon-green{background:rgba(52,211,153,0.16);}
-  .card h3{font-size:17px;margin-bottom:10px;}
-  .card p{color:var(--text-dim);font-size:14.5px;}
-
   /* reveal on scroll */
-  .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease), transform .7s var(--ease);}
   .reveal.in{opacity:1;transform:translateY(0);}
+  @media (prefers-reduced-motion: reduce){.reveal{opacity:1;transform:none;transition:none;}}
 
-  /* ---------- PHONE MOCKUPS ---------- */
+  /* ---------- REAL DEVICE SHOWCASE ---------- */
   .phones{
     display:flex;align-items:center;justify-content:center;gap:0;
-    padding:20px 0 10px;flex-wrap:wrap;
+    padding:12px 0 8px;flex-wrap:wrap;
   }
-  .phone{
-    width:220px;height:440px;border-radius:34px;
-    background:var(--bg);
-    border:6px solid #05070c;
-    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
-    position:relative;overflow:hidden;
-    flex-shrink:0;
+  .device{
+    width:216px;border-radius:32px;border:7px solid var(--bg-deep);
+    box-shadow:0 40px 80px -24px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(255,255,255,0.06);
+    position:relative;overflow:hidden;flex-shrink:0;background:var(--bg-deep);
+    transition:transform .5s var(--ease);
   }
-  .phone.mid{transform:scale(1.08) translateY(-16px);z-index:2;margin:0 -8px;}
-  .phone.side{opacity:0.55;filter:saturate(0.7);}
-  .phone-screen{padding:22px 16px;height:100%;display:flex;flex-direction:column;}
-  .phone-notch{width:50px;height:5px;background:#222840;border-radius:99px;margin:0 auto 18px;}
-  .p-eyebrow{font-size:9px;color:var(--text-faint);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
-  .p-title{font-family:'Space Grotesk';font-weight:700;font-size:18px;line-height:1.2;margin-bottom:10px;}
-  .p-sub{font-size:11px;color:var(--text-dim);margin-bottom:16px;}
-  .p-input{
-    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
-    padding:9px 10px;font-size:11px;color:var(--text-faint);margin-bottom:10px;
+  .device::before{
+    content:"";position:absolute;top:9px;left:50%;transform:translateX(-50%);
+    width:46px;height:5px;background:#000;border-radius:99px;z-index:2;opacity:0.8;
   }
-  .p-btn{
-    background:var(--primary);color:#fff;text-align:center;border-radius:8px;
-    padding:10px;font-size:12px;font-weight:700;margin-top:auto;
-  }
-  .p-flick-btn{
-    width:74px;height:74px;border-radius:50%;background:var(--accent);
-    display:flex;align-items:center;justify-content:center;color:#1a1200;
-    font-weight:700;font-size:13px;margin:auto;
-    box-shadow:0 0 30px -6px rgba(255,176,32,0.6);
-  }
-  .p-balance{font-family:'JetBrains Mono';font-size:26px;font-weight:700;text-align:center;margin:14px 0 6px;color:var(--primary);}
-  .p-qr{
-    width:84px;height:84px;background:#fff;border-radius:8px;margin:14px auto;
-    display:flex;align-items:center;justify-content:center;font-size:9px;color:#000;
-  }
-  .p-chip{
-    display:inline-flex;font-size:10px;padding:4px 9px;border-radius:99px;
-    background:rgba(52,211,153,0.16);color:var(--success);font-weight:700;margin-bottom:12px;width:fit-content;
-  }
+  .device img{display:block;width:100%;height:auto;}
+  .device.mid{transform:scale(1.1) translateY(-14px);z-index:2;margin:0 -6px;}
+  .device.side{opacity:0.6;filter:saturate(0.75);transform:scale(0.94);}
+  .device.side:first-child{transform:scale(0.94) rotate(-2deg);}
+  .device.side:last-child{transform:scale(0.94) rotate(2deg);}
 
   /* ---------- ARCHITECTURE / JUDGES SECTION ---------- */
-  .arch-flow{
-    display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
-    margin:48px 0 40px;
-  }
+  .arch-flow{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:48px 0 44px;}
   .arch-node{
-    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-    padding:20px 22px;min-width:150px;text-align:center;
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:20px 24px;min-width:156px;text-align:center;backdrop-filter:blur(10px);
   }
-  .arch-node .tag{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:block;}
+  .arch-node .tag{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;display:block;}
   .arch-node .name{font-family:'Space Grotesk';font-weight:700;font-size:15px;}
-  .arch-arrow{color:var(--text-faint);font-size:22px;padding:0 4px;}
+  .arch-arrow{color:var(--text-faint);flex-shrink:0;}
+  .arch-arrow svg{width:20px;height:20px;}
 
   .tx-proof{
     display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-    padding:18px 22px;max-width:640px;margin:0 auto;
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:20px 24px;max-width:660px;margin:0 auto;backdrop-filter:blur(10px);
   }
   .tx-proof .dot-live{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 10px var(--success);flex-shrink:0;}
   .tx-proof code{font-size:12.5px;color:var(--text-dim);word-break:break-all;}
-  .tx-proof a{color:var(--primary);font-weight:700;font-size:13px;white-space:nowrap;}
+  .tx-proof a{color:var(--primary);font-weight:700;font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}
+  .tx-proof a svg{width:14px;height:14px;}
 
-  .checklist{list-style:none;display:flex;flex-direction:column;gap:14px;}
-  .checklist li{display:flex;gap:12px;font-size:14.5px;color:var(--text-dim);align-items:flex-start;}
-  .checklist li .ck{
-    width:20px;height:20px;border-radius:50%;background:rgba(52,211,153,0.16);color:var(--success);
-    display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px;
-  }
+  .checklist{list-style:none;display:flex;flex-direction:column;gap:16px;}
+  .checklist li{display:flex;gap:13px;font-size:14.5px;color:var(--text-dim);align-items:flex-start;}
+  .checklist li .ck{color:var(--success);flex-shrink:0;margin-top:1px;}
+  .checklist li .ck svg{width:21px;height:21px;}
   .checklist b{color:var(--text);}
 
   /* ---------- TICKER ---------- */
   .ticker-box{
-    display:flex;align-items:center;justify-content:center;gap:14px;
+    display:inline-flex;align-items:center;gap:14px;
     background:var(--surface);border:1px solid var(--border);border-radius:999px;
-    padding:14px 28px;max-width:fit-content;margin:0 auto;
+    padding:16px 30px;backdrop-filter:blur(10px);
   }
-  .ticker-num{font-family:'Space Grotesk';font-weight:700;font-size:22px;color:var(--accent);}
+  .ticker-box svg{width:18px;height:18px;color:var(--accent);}
+  .ticker-num{font-family:'Space Grotesk';font-weight:700;font-size:24px;color:var(--accent);}
 
   /* ---------- FINAL CTA ---------- */
-  .final-cta{
-    text-align:center;padding:100px 0 120px;
-  }
-  .final-cta h2{font-size:clamp(30px,5vw,52px);margin-bottom:18px;}
-  .final-cta p{color:var(--text-dim);margin-bottom:36px;font-size:17px;}
+  .final-cta{text-align:center;padding:110px 0 128px;}
+  .final-cta h2{font-size:clamp(32px,5.5vw,58px);margin-bottom:18px;}
+  .final-cta p{color:var(--text-dim);margin-bottom:38px;font-size:17px;}
 
-  footer{
-    border-top:1px solid var(--border);padding:32px 0;
-    text-align:center;color:var(--text-faint);font-size:13px;
-  }
+  footer{border-top:1px solid var(--border);padding:36px 0;text-align:center;color:var(--text-faint);font-size:13px;}
   footer a{color:var(--text-dim);}
   footer a:hover{color:var(--text);}
 
   ::selection{background:rgba(255,176,32,0.3);}
+  :focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 </style>
 </head>
 <body>
 
+<div class="ambient" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
 <nav>
   <div class="wrap">
     <div class="logo">
-      <span class="logo-orbs"><span></span><span></span></span>
+      <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
       flick
     </div>
-    <div style="display:flex;align-items:center;gap:20px;">
-      <a href="tech/index.html" style="font-size:14px;color:var(--text-dim);">Technical deep dive</a>
-      <a class="btn btn-accent btn-sm" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">Open Flick →</a>
+    <div class="nav-right">
+      <a class="nav-link" href="tech/index.html">Technical deep dive</a>
+      <a class="btn btn-accent btn-sm" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">
+        Open Flick
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+      </a>
     </div>
   </div>
 </nav>
 
 <header class="hero wrap">
   <span class="badge"><span class="dot"></span> UXmaxx Hackathon · Encode Club × Particle Network</span>
-  <h1>Send money<br>like a <span class="accent-text">flick.</span></h1>
+  <h1>Send money<br>like a <span class="grad">flick.</span></h1>
   <p class="sub">No wallets. No seed phrases. No gas. Just an email — and it lands like a gift card, backed by real on-chain transactions you can verify yourself.</p>
   <div class="hero-ctas">
-    <a class="btn btn-accent" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">Try Flick now →</a>
+    <a class="btn btn-accent" id="primary-cta" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">
+      Try Flick now
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+    </a>
     <a class="btn btn-ghost" href="#how">See how it works</a>
   </div>
   <p class="hero-note">Live demo · Base Sepolia testnet · every send is a real, verifiable transaction</p>
 
   <div class="convergence-stage" aria-hidden="true">
-    <svg viewBox="0 0 520 280">
+    <svg viewBox="0 0 520 260">
       <defs>
         <filter id="goo">
           <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur" />
@@ -309,16 +300,16 @@
         </filter>
       </defs>
       <g filter="url(#goo)">
-        <circle class="orb orb-base" cx="190" cy="140" r="64" opacity="0.9">
+        <circle class="orb-base" cx="190" cy="128" r="62" opacity="0.9">
           <animate attributeName="cx" values="150;208;150" dur="4.5s" repeatCount="indefinite" />
         </circle>
-        <circle class="orb orb-arb" cx="330" cy="140" r="64" opacity="0.9">
+        <circle class="orb-arb" cx="330" cy="128" r="62" opacity="0.9">
           <animate attributeName="cx" values="370;312;370" dur="4.5s" repeatCount="indefinite" />
         </circle>
       </g>
-      <text x="260" y="146" text-anchor="middle" class="conv-amount">$24.00</text>
-      <text x="140" y="230" text-anchor="middle" class="conv-label">BASE</text>
-      <text x="380" y="230" text-anchor="middle" class="conv-label">ARBITRUM</text>
+      <text x="260" y="134" text-anchor="middle" class="conv-amount">$24.00</text>
+      <text x="140" y="212" text-anchor="middle" class="conv-label">BASE</text>
+      <text x="380" y="212" text-anchor="middle" class="conv-label">ARBITRUM</text>
     </svg>
   </div>
 </header>
@@ -332,22 +323,30 @@
     </div>
     <div class="grid grid-4">
       <div class="card reveal">
-        <div class="icon icon-blue">✉️</div>
+        <div class="icon-box icon-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        </div>
         <h3>Send to an email</h3>
         <p>No wallet address, no ENS, no QR-scavenger-hunt. Type an email or phone, flick, done.</p>
       </div>
       <div class="card reveal">
-        <div class="icon icon-amber">🎁</div>
+        <div class="icon-box icon-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="4" rx="1"/><rect x="4" y="13" width="16" height="8" rx="1"/><path d="M12 9v12"/><path d="M12 9c-1.5-3-5-4-5.5-1.5C6 9 8 9.5 12 9z"/><path d="M12 9c1.5-3 5-4 5.5-1.5C18 9 16 9.5 12 9z"/></svg>
+        </div>
         <h3>Gift-card UX</h3>
         <p>The recipient never sees "wallet" or "seed phrase." It feels like redeeming a gift card, not onboarding into DeFi.</p>
       </div>
       <div class="card reveal">
-        <div class="icon icon-green">🔁</div>
+        <div class="icon-box icon-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </div>
         <h3>Viral by design</h3>
         <p>Claiming a flick creates a wallet in seconds — and a shareable moment. Every recipient is a new sender.</p>
       </div>
       <div class="card reveal">
-        <div class="icon icon-blue">⚡</div>
+        <div class="icon-box icon-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
         <h3>Chain-abstracted</h3>
         <p>Balances across chains converge into one number. You never pick a network — Flick routes it.</p>
       </div>
@@ -360,37 +359,17 @@
     <div class="section-head reveal">
       <span class="eyebrow">The product</span>
       <h2>Three screens. Zero friction.</h2>
-      <p>Login, flick, claim — the entire loop, end to end.</p>
+      <p>Real screens from the live app — login, flick, claim, end to end.</p>
     </div>
     <div class="phones">
-      <div class="phone side reveal">
-        <div class="phone-screen">
-          <div class="phone-notch"></div>
-          <div class="p-eyebrow">Login</div>
-          <div class="p-title">Send money<br>like a flick.</div>
-          <div class="p-input">tu@email.com</div>
-          <div class="p-btn">Continue</div>
-        </div>
+      <div class="device side reveal">
+        <img src="img/screen-login.png" alt="Flick login screen: email input and continue with Google" loading="lazy" width="860" height="1800" />
       </div>
-      <div class="phone mid reveal">
-        <div class="phone-screen">
-          <div class="phone-notch"></div>
-          <div class="p-eyebrow">Home</div>
-          <div class="p-sub" style="text-align:center;margin-bottom:0;">Total balance</div>
-          <div class="p-balance">$24.00</div>
-          <div class="p-flick-btn">Flick</div>
-          <div class="p-sub" style="text-align:center;margin-top:14px;">⚡ 128 flicks sent</div>
-        </div>
+      <div class="device mid reveal">
+        <img src="img/screen-home.png" alt="Flick home screen showing unified balance across chains" loading="lazy" width="860" height="1800" />
       </div>
-      <div class="phone side reveal">
-        <div class="phone-screen">
-          <div class="phone-notch"></div>
-          <div class="p-eyebrow">Claim</div>
-          <div class="p-title" style="font-size:16px;">You got $5.00 🎉</div>
-          <div class="p-sub">"happy birthday!!"</div>
-          <div class="p-qr">QR</div>
-          <div class="p-chip">Claim it, it's yours</div>
-        </div>
+      <div class="device side reveal">
+        <img src="img/screen-claim.png" alt="Flick claim screen showing an incoming flick with a message" loading="lazy" width="860" height="1800" />
       </div>
     </div>
   </div>
@@ -406,27 +385,33 @@
 
     <div class="arch-flow reveal">
       <div class="arch-node"><span class="tag">Sender</span><span class="name">Particle wallet</span></div>
-      <span class="arch-arrow">→</span>
+      <span class="arch-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
       <div class="arch-node"><span class="tag">Server-verified</span><span class="name">Escrow relay</span></div>
-      <span class="arch-arrow">→</span>
+      <span class="arch-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
       <div class="arch-node"><span class="tag">Recipient</span><span class="name">Particle wallet</span></div>
     </div>
 
     <div class="tx-proof reveal">
       <span class="dot-live"></span>
       <code id="tx-hash">0x77117c89e12dce9f25a8666cefa4293ad910605ee9ef854d9d9fc59436032995</code>
-      <a href="https://sepolia.basescan.org/tx/0x77117c89e12dce9f25a8666cefa4293ad910605ee9ef854d9d9fc59436032995" target="_blank" rel="noopener">View on Basescan →</a>
+      <a href="https://sepolia.basescan.org/tx/0x77117c89e12dce9f25a8666cefa4293ad910605ee9ef854d9d9fc59436032995" target="_blank" rel="noopener">
+        View on Basescan
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+      </a>
     </div>
 
     <div style="margin-top:56px;" class="reveal">
-      <ul class="checklist" style="max-width:640px;margin:0 auto;">
-        <li><span class="ck">✓</span><span><b>Server-side session verification</b> — every mutating request is checked against Particle's own session API before touching the database, not just trusted from the client.</span></li>
-        <li><span class="ck">✓</span><span><b>Deny-by-default RLS</b> on every table — verified live: the public key can't read or write a single row without going through the API.</span></li>
-        <li><span class="ck">✓</span><span><b>On-chain verified sends</b> — the backend decodes the real ERC-20 <code>Transfer</code> event before ever creating a claim. No trusted client-submitted hash.</span></li>
-        <li><span class="ck">✓</span><span><b>Chain-abstraction aware</b> — built around Particle Universal Accounts; testnet demo uses a transparent escrow relay since Universal Accounts don't yet support testnets.</span></li>
+      <ul class="checklist" style="max-width:660px;margin:0 auto;">
+        <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Server-side session verification</b> — every mutating request is checked against Particle's own session API before touching the database, not just trusted from the client.</span></li>
+        <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Deny-by-default RLS</b> on every table — verified live: the public key can't read or write a single row without going through the API.</span></li>
+        <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>On-chain verified sends</b> — the backend decodes the real ERC-20 <code>Transfer</code> event before ever creating a claim. No trusted client-submitted hash.</span></li>
+        <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Chain-abstraction aware</b> — built around Particle Universal Accounts; testnet demo uses a transparent escrow relay since Universal Accounts don't yet support testnets.</span></li>
       </ul>
-      <p style="text-align:center;margin-top:32px;">
-        <a class="btn btn-ghost" href="tech/index.html">Read the full technical deep dive →</a>
+      <p style="text-align:center;margin-top:36px;">
+        <a class="btn btn-ghost" href="tech/index.html">
+          Read the full technical deep dive
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+        </a>
       </p>
     </div>
   </div>
@@ -434,11 +419,12 @@
 
 <section class="py border-top">
   <div class="wrap" style="text-align:center;">
-    <div class="section-head reveal" style="margin-bottom:24px;">
+    <div class="section-head reveal" style="margin-bottom:28px;">
       <span class="eyebrow">Live right now</span>
       <h2>Flicks sent so far</h2>
     </div>
     <div class="ticker-box reveal">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
       <span class="ticker-num" id="ticker-num">—</span>
       <span style="color:var(--text-dim);font-size:14px;">flicks sent on Flick</span>
     </div>
@@ -448,7 +434,10 @@
 <section class="final-cta wrap border-top">
   <h2>Give it a flick.</h2>
   <p>Takes about 10 seconds. Nothing to install.</p>
-  <a class="btn btn-accent" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">Open Flick →</a>
+  <a class="btn btn-accent" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">
+    Open Flick
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+  </a>
 </section>
 
 <footer>
@@ -457,13 +446,47 @@
   </div>
 </footer>
 
+
 <script>
-  // Scroll reveal
+  // Scroll reveal (progressive enhancement — a safety-net timer below
+  // guarantees content is never permanently hidden if IO doesn't fire)
   const revealEls = document.querySelectorAll('.reveal');
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
-  }, { threshold: 0.15 });
-  revealEls.forEach(el => io.observe(el));
+  revealEls.forEach((el, idx) => { el.style.transitionDelay = (idx % 4) * 0.06 + 's'; });
+
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -5% 0px' });
+    revealEls.forEach(el => io.observe(el));
+  } else {
+    revealEls.forEach(el => el.classList.add('in'));
+  }
+
+  // Safety net: force-reveal anything still hidden shortly after load,
+  // so a slow/blocked observer never leaves the page blank.
+  window.addEventListener('load', () => {
+    setTimeout(() => revealEls.forEach(el => el.classList.add('in')), 1200);
+  });
+
+  // Subtle magnetic pull on the primary hero CTA only (one focal element, per motion guidelines)
+  (function () {
+    const cta = document.getElementById('primary-cta');
+    if (!cta) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
+    cta.addEventListener('mousemove', (e) => {
+      const r = cta.getBoundingClientRect();
+      const x = (e.clientX - r.left - r.width / 2) * 0.25;
+      const y = (e.clientY - r.top - r.height / 2) * 0.35;
+      cta.style.transform = 'translate(' + x + 'px,' + (y - 2) + 'px)';
+    });
+    cta.addEventListener('mouseleave', () => { cta.style.transform = ''; });
+  })();
 
   // Live ticker — fetches the real public endpoint (CORS-open, aggregate count only)
   (function () {
