@@ -13,112 +13,140 @@
 
 <style>
   :root{
-    --bg:#0B0F19; --surface:#131826; --surface-2:#1a2032;
+    --bg:#0B0F19; --bg-deep:#05070c;
+    --surface:rgba(255,255,255,0.045); --surface-solid:#131826;
     --primary:#5B8DEF; --accent:#FFB020; --success:#34D399;
-    --text:#F5F7FB; --text-dim:rgba(245,247,251,0.62); --text-faint:rgba(245,247,251,0.38);
-    --border:rgba(255,255,255,0.08); --radius:12px;
+    --text:#F5F7FB; --text-dim:rgba(245,247,251,0.64); --text-faint:rgba(245,247,251,0.4);
+    --border:rgba(255,255,255,0.08); --border-hover:rgba(255,255,255,0.18);
+    --radius:18px; --ease:cubic-bezier(0.16,1,0.3,1);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth;}
-  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;line-height:1.6;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
   h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.02em;}
   code,.mono{font-family:'JetBrains Mono',monospace;}
   a{color:inherit;text-decoration:none;}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
-  section{padding:72px 0;border-top:1px solid var(--border);}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
+  section{padding:76px 0;border-top:1px solid var(--border);position:relative;}
   section:first-of-type{border-top:none;}
+  svg.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.125em;}
 
-  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(11,15,25,0.72);border-bottom:1px solid var(--border);}
+  .ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:0.13;}
+  .blob-1{width:560px;height:560px;top:-200px;left:10%;background:var(--primary);animation:drift 28s ease-in-out infinite;}
+  .blob-2{width:480px;height:480px;top:400px;right:8%;background:var(--accent);opacity:0.1;animation:drift 34s ease-in-out infinite reverse;}
+  @keyframes drift{0%,100%{transform:translate(0,0);}50%{transform:translate(50px,40px);}}
+  @media (prefers-reduced-motion: reduce){.blob{animation:none;}}
+
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px) saturate(140%);background:rgba(11,15,25,0.68);border-bottom:1px solid var(--border);}
   nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px;}
-  .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;}
-  .logo-orbs{position:relative;width:24px;height:18px;flex-shrink:0;}
-  .logo-orbs span{position:absolute;top:0;width:14px;height:14px;border-radius:50%;}
-  .logo-orbs span:first-child{left:0;background:var(--primary);}
-  .logo-orbs span:last-child{left:9px;background:var(--accent);mix-blend-mode:screen;}
+  .logo{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:700;}
+  .logo svg{color:var(--accent);width:20px;height:20px;}
   .nav-links{display:flex;gap:24px;align-items:center;font-size:14px;color:var(--text-dim);}
   .nav-links a:hover{color:var(--text);}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px;transition:transform .18s ease;}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;font-weight:700;font-size:14px;transition:transform .3s var(--ease), box-shadow .3s var(--ease);}
   .btn:hover{transform:translateY(-2px);}
-  .btn-accent{background:var(--accent);color:#1A1200;}
+  .btn-accent{background:linear-gradient(180deg,#FFC24D,var(--accent));color:#1A1200;}
+  .btn-accent:hover{box-shadow:0 10px 30px -8px rgba(255,176,32,0.5);}
+  .btn svg{width:15px;height:15px;}
 
-  .hero{text-align:center;padding:72px 0 48px;}
-  .eyebrow{font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:block;}
-  .hero h1{font-size:clamp(32px,5vw,54px);margin-bottom:18px;}
-  .hero p{color:var(--text-dim);font-size:17px;max-width:620px;margin:0 auto;}
+  .hero{text-align:center;padding:76px 0 52px;}
+  .eyebrow{font-size:12.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:block;}
+  .hero h1{font-size:clamp(34px,5.5vw,58px);margin-bottom:18px;letter-spacing:-0.03em;}
+  .hero p{color:var(--text-dim);font-size:17px;max-width:640px;margin:0 auto;}
 
-  .section-head{max-width:680px;margin:0 auto 40px;text-align:center;}
-  .section-head h2{font-size:clamp(24px,3.5vw,34px);margin-bottom:12px;}
+  .section-head{max-width:700px;margin:0 auto 44px;text-align:center;}
+  .section-head h2{font-size:clamp(25px,3.5vw,36px);margin-bottom:12px;}
   .section-head p{color:var(--text-dim);font-size:16px;}
 
-  .grid{display:grid;gap:16px;}
+  .grid{display:grid;gap:18px;}
   .grid-4{grid-template-columns:repeat(4,1fr);}
   .grid-3{grid-template-columns:repeat(3,1fr);}
   .grid-2{grid-template-columns:repeat(2,1fr);}
   @media (max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(1,1fr);}}
   @media (max-width:640px){.grid-4,.grid-2{grid-template-columns:1fr;}}
 
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;}
-  .card .tag{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:8px;display:block;}
+  .card{
+    background:linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015));
+    border:1px solid var(--border);border-radius:var(--radius);padding:24px;
+    backdrop-filter:blur(10px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
+    transition:border-color .35s var(--ease), transform .35s var(--ease);
+  }
+  .card:hover{border-color:var(--border-hover);transform:translateY(-4px);}
+  .card .tag{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.07em;font-weight:700;margin-bottom:8px;display:block;}
   .card h3{font-size:16px;margin-bottom:8px;}
   .card p{color:var(--text-dim);font-size:14px;}
 
-  /* ---- architecture diagram ---- */
-  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px 20px;overflow-x:auto;}
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px 20px;overflow-x:auto;backdrop-filter:blur(10px);}
   .diagram svg{display:block;margin:0 auto;min-width:760px;}
 
-  /* ---- flow steps ---- */
-  .flow-step{display:grid;grid-template-columns:280px 1fr;gap:32px;align-items:center;padding:40px 0;border-bottom:1px solid var(--border);}
+  .flow-step{display:grid;grid-template-columns:230px 1fr;gap:36px;align-items:center;padding:44px 0;border-bottom:1px solid var(--border);}
   .flow-step:last-child{border-bottom:none;}
-  .flow-step img{width:100%;max-width:260px;border-radius:18px;border:5px solid #05070c;box-shadow:0 24px 48px -16px rgba(0,0,0,0.55);display:block;margin:0 auto;}
+  .flow-step .device{
+    width:100%;max-width:210px;margin:0 auto;border-radius:28px;border:6px solid var(--bg-deep);
+    box-shadow:0 28px 56px -20px rgba(0,0,0,0.6),inset 0 0 0 1px rgba(255,255,255,0.06);
+    overflow:hidden;position:relative;
+  }
+  .flow-step .device::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:38px;height:4px;background:#000;border-radius:99px;z-index:2;opacity:0.8;}
+  .flow-step img{width:100%;display:block;}
   .flow-step .step-num{
     display:inline-flex;align-items:center;justify-content:center;
-    width:28px;height:28px;border-radius:50%;background:rgba(255,176,32,0.16);color:var(--accent);
-    font-family:'JetBrains Mono';font-size:13px;font-weight:700;margin-bottom:14px;
+    width:30px;height:30px;border-radius:50%;background:rgba(255,176,32,0.14);color:var(--accent);
+    font-family:'JetBrains Mono';font-size:13px;font-weight:700;margin-bottom:16px;
   }
   .flow-step h3{font-size:20px;margin-bottom:10px;}
   .flow-step p{color:var(--text-dim);font-size:14.5px;margin-bottom:14px;}
   .flow-step .tech-note{
-    background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;
+    background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;padding:13px 15px;
     font-size:12.5px;color:var(--text-dim);
   }
   .flow-step .tech-note code{color:var(--primary);}
   @media (max-width:760px){.flow-step{grid-template-columns:1fr;}}
 
-  /* ---- schema tables ---- */
   .schema-table{width:100%;border-collapse:collapse;font-size:13.5px;}
   .schema-table th{text-align:left;color:var(--text-faint);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:0.05em;padding:8px 12px;border-bottom:1px solid var(--border);}
   .schema-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-dim);}
   .schema-table td:first-child{color:var(--text);font-family:'JetBrains Mono';font-size:12.5px;}
-  .schema-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;overflow-x:auto;}
+  .schema-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;overflow-x:auto;backdrop-filter:blur(10px);}
   .schema-card h3{font-size:15px;margin-bottom:14px;font-family:'JetBrains Mono';color:var(--accent);}
 
-  .checklist{list-style:none;display:flex;flex-direction:column;gap:14px;}
-  .checklist li{display:flex;gap:12px;font-size:14.5px;color:var(--text-dim);align-items:flex-start;}
-  .checklist li .ck{width:20px;height:20px;border-radius:50%;background:rgba(52,211,153,0.16);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px;}
+  .checklist{list-style:none;display:flex;flex-direction:column;gap:16px;}
+  .checklist li{display:flex;gap:13px;font-size:14.5px;color:var(--text-dim);align-items:flex-start;}
+  .checklist li .ck{color:var(--success);flex-shrink:0;margin-top:1px;}
+  .checklist li .ck svg{width:21px;height:21px;}
   .checklist b{color:var(--text);}
 
-  .roadmap-item{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--border);}
+  .roadmap-item{display:flex;gap:14px;padding:18px 0;border-bottom:1px solid var(--border);}
   .roadmap-item:last-child{border-bottom:none;}
   .roadmap-item .dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint);margin-top:8px;flex-shrink:0;}
   .roadmap-item h4{font-size:15px;margin-bottom:4px;}
   .roadmap-item p{font-size:13.5px;color:var(--text-dim);}
 
-  footer{border-top:1px solid var(--border);padding:32px 0;text-align:center;color:var(--text-faint);font-size:13px;}
+  footer{border-top:1px solid var(--border);padding:36px 0;text-align:center;color:var(--text-faint);font-size:13px;position:relative;z-index:1;}
   footer a{color:var(--text-dim);}
   footer a:hover{color:var(--text);}
 </style>
 </head>
 <body>
 
+<div class="ambient" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+</div>
+
 <nav>
   <div class="wrap">
     <a class="logo" href="../index.html">
-      <span class="logo-orbs"><span></span><span></span></span>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
       flick
     </a>
     <div class="nav-links">
       <a href="../index.html">← Back to overview</a>
-      <a class="btn btn-accent" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">Open Flick →</a>
+      <a class="btn btn-accent" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">
+        Open Flick
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+      </a>
     </div>
   </div>
 </nav>
@@ -232,7 +260,7 @@
     </div>
 
     <div class="flow-step">
-      <img src="../img/screen-login.png" alt="Flick login screen" />
+      <div class="device"><img src="../img/screen-login.png" alt="Flick login screen" loading="lazy" width="860" height="1800" /></div>
       <div>
         <span class="step-num">1</span>
         <h3>Login — no wallet talk</h3>
@@ -242,7 +270,7 @@
     </div>
 
     <div class="flow-step">
-      <img src="../img/screen-home.png" alt="Flick home screen with balance" />
+      <div class="device"><img src="../img/screen-home.png" alt="Flick home screen with balance" loading="lazy" width="860" height="1800" /></div>
       <div>
         <span class="step-num">2</span>
         <h3>Home — one balance, any chain</h3>
@@ -252,7 +280,7 @@
     </div>
 
     <div class="flow-step">
-      <img src="../img/screen-send.png" alt="Flick send screen" />
+      <div class="device"><img src="../img/screen-send.png" alt="Flick send screen" loading="lazy" width="860" height="1800" /></div>
       <div>
         <span class="step-num">3</span>
         <h3>Send — the real transaction</h3>
@@ -262,7 +290,7 @@
     </div>
 
     <div class="flow-step">
-      <img src="../img/screen-claim.png" alt="Flick claim screen" />
+      <div class="device"><img src="../img/screen-claim.png" alt="Flick claim screen" loading="lazy" width="860" height="1800" /></div>
       <div>
         <span class="step-num">4</span>
         <h3>Claim — gift-card mental model</h3>
@@ -279,13 +307,13 @@
       <span class="eyebrow">Security model</span>
       <h2>What's actually enforced</h2>
     </div>
-    <ul class="checklist" style="max-width:680px;margin:0 auto;">
-      <li><span class="ck">✓</span><span><b>Server-side session verification</b> — every mutating request calls Particle's <code>getUserInfo</code> RPC to confirm the submitted user ID and token belong to a real, currently valid session. Verified live: fake/missing tokens get a hard <code>401</code>.</span></li>
-      <li><span class="ck">✓</span><span><b>Deny-by-default Row Level Security</b> on every table. Verified live with the public key: reads return empty arrays, writes get rejected with an explicit RLS violation. All real reads/writes go through server routes using the service role.</span></li>
-      <li><span class="ck">✓</span><span><b>On-chain verified transfers</b> — the backend never trusts a client-submitted transaction hash. It fetches the real receipt from a public RPC, decodes the ERC-20 <code>Transfer</code> event, and checks the recipient and amount before creating or completing a claim.</span></li>
-      <li><span class="ck">✓</span><span><b>Fail-closed payouts</b> — if the on-chain payout to a recipient fails, the claim stays "pending" instead of being marked claimed. No double-pay, no silent fund loss.</span></li>
-      <li><span class="ck">✓</span><span><b>No secrets in code</b> — private keys and service-role keys live only in Vercel environment variables, never committed, never sent to the client.</span></li>
-      <li><span class="ck">✓</span><span><b>Non-guessable claim links</b> — <code>claim_token</code> is 128 bits of cryptographic randomness, not a sequential ID.</span></li>
+    <ul class="checklist" style="max-width:700px;margin:0 auto;">
+      <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Server-side session verification</b> — every mutating request calls Particle's <code>getUserInfo</code> RPC to confirm the submitted user ID and token belong to a real, currently valid session. Verified live: fake/missing tokens get a hard <code>401</code>.</span></li>
+      <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Deny-by-default Row Level Security</b> on every table. Verified live with the public key: reads return empty arrays, writes get rejected with an explicit RLS violation. All real reads/writes go through server routes using the service role.</span></li>
+      <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>On-chain verified transfers</b> — the backend never trusts a client-submitted transaction hash. It fetches the real receipt from a public RPC, decodes the ERC-20 <code>Transfer</code> event, and checks the recipient and amount before creating or completing a claim.</span></li>
+      <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Fail-closed payouts</b> — if the on-chain payout to a recipient fails, the claim stays "pending" instead of being marked claimed. No double-pay, no silent fund loss.</span></li>
+      <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>No secrets in code</b> — private keys and service-role keys live only in Vercel environment variables, never committed, never sent to the client.</span></li>
+      <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Non-guessable claim links</b> — <code>claim_token</code> is 128 bits of cryptographic randomness, not a sequential ID.</span></li>
     </ul>
   </div>
 </section>
@@ -331,7 +359,7 @@
       <span class="eyebrow">Known limitations + roadmap</span>
       <h2>What's next, honestly</h2>
     </div>
-    <div style="max-width:680px;margin:0 auto;">
+    <div style="max-width:700px;margin:0 auto;">
       <div class="roadmap-item">
         <span class="dot"></span>
         <div><h4>Universal Account is mainnet-only today</h4><p>Particle's Universal Account SDK doesn't support testnet chain IDs yet. The testnet demo uses a transparent escrow relay instead — same UX, real transactions, different plumbing under the hood until testnet support lands.</p></div>
