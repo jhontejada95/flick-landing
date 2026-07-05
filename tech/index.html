@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flick — Technical deep dive</title>
+<meta name="description" content="Architecture, infrastructure, security model and user flows behind Flick — built for UXmaxx Hackathon (Encode Club × Particle Network)." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230B0F19'/%3E%3Ccircle cx='38' cy='50' r='20' fill='%235B8DEF'/%3E%3Ccircle cx='62' cy='50' r='20' fill='%23FFB020'/%3E%3C/svg%3E" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --bg:#0B0F19; --surface:#131826; --surface-2:#1a2032;
+    --primary:#5B8DEF; --accent:#FFB020; --success:#34D399;
+    --text:#F5F7FB; --text-dim:rgba(245,247,251,0.62); --text-faint:rgba(245,247,251,0.38);
+    --border:rgba(255,255,255,0.08); --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;line-height:1.6;}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.02em;}
+  code,.mono{font-family:'JetBrains Mono',monospace;}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  section{padding:72px 0;border-top:1px solid var(--border);}
+  section:first-of-type{border-top:none;}
+
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(11,15,25,0.72);border-bottom:1px solid var(--border);}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px;}
+  .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;}
+  .logo-orbs{position:relative;width:24px;height:18px;flex-shrink:0;}
+  .logo-orbs span{position:absolute;top:0;width:14px;height:14px;border-radius:50%;}
+  .logo-orbs span:first-child{left:0;background:var(--primary);}
+  .logo-orbs span:last-child{left:9px;background:var(--accent);mix-blend-mode:screen;}
+  .nav-links{display:flex;gap:24px;align-items:center;font-size:14px;color:var(--text-dim);}
+  .nav-links a:hover{color:var(--text);}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px;transition:transform .18s ease;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn-accent{background:var(--accent);color:#1A1200;}
+
+  .hero{text-align:center;padding:72px 0 48px;}
+  .eyebrow{font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:block;}
+  .hero h1{font-size:clamp(32px,5vw,54px);margin-bottom:18px;}
+  .hero p{color:var(--text-dim);font-size:17px;max-width:620px;margin:0 auto;}
+
+  .section-head{max-width:680px;margin:0 auto 40px;text-align:center;}
+  .section-head h2{font-size:clamp(24px,3.5vw,34px);margin-bottom:12px;}
+  .section-head p{color:var(--text-dim);font-size:16px;}
+
+  .grid{display:grid;gap:16px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+  @media (max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(1,1fr);}}
+  @media (max-width:640px){.grid-4,.grid-2{grid-template-columns:1fr;}}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;}
+  .card .tag{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:8px;display:block;}
+  .card h3{font-size:16px;margin-bottom:8px;}
+  .card p{color:var(--text-dim);font-size:14px;}
+
+  /* ---- architecture diagram ---- */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px 20px;overflow-x:auto;}
+  .diagram svg{display:block;margin:0 auto;min-width:760px;}
+
+  /* ---- flow steps ---- */
+  .flow-step{display:grid;grid-template-columns:280px 1fr;gap:32px;align-items:center;padding:40px 0;border-bottom:1px solid var(--border);}
+  .flow-step:last-child{border-bottom:none;}
+  .flow-step img{width:100%;max-width:260px;border-radius:18px;border:5px solid #05070c;box-shadow:0 24px 48px -16px rgba(0,0,0,0.55);display:block;margin:0 auto;}
+  .flow-step .step-num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border-radius:50%;background:rgba(255,176,32,0.16);color:var(--accent);
+    font-family:'JetBrains Mono';font-size:13px;font-weight:700;margin-bottom:14px;
+  }
+  .flow-step h3{font-size:20px;margin-bottom:10px;}
+  .flow-step p{color:var(--text-dim);font-size:14.5px;margin-bottom:14px;}
+  .flow-step .tech-note{
+    background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;
+    font-size:12.5px;color:var(--text-dim);
+  }
+  .flow-step .tech-note code{color:var(--primary);}
+  @media (max-width:760px){.flow-step{grid-template-columns:1fr;}}
+
+  /* ---- schema tables ---- */
+  .schema-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .schema-table th{text-align:left;color:var(--text-faint);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:0.05em;padding:8px 12px;border-bottom:1px solid var(--border);}
+  .schema-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-dim);}
+  .schema-table td:first-child{color:var(--text);font-family:'JetBrains Mono';font-size:12.5px;}
+  .schema-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;overflow-x:auto;}
+  .schema-card h3{font-size:15px;margin-bottom:14px;font-family:'JetBrains Mono';color:var(--accent);}
+
+  .checklist{list-style:none;display:flex;flex-direction:column;gap:14px;}
+  .checklist li{display:flex;gap:12px;font-size:14.5px;color:var(--text-dim);align-items:flex-start;}
+  .checklist li .ck{width:20px;height:20px;border-radius:50%;background:rgba(52,211,153,0.16);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px;}
+  .checklist b{color:var(--text);}
+
+  .roadmap-item{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--border);}
+  .roadmap-item:last-child{border-bottom:none;}
+  .roadmap-item .dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint);margin-top:8px;flex-shrink:0;}
+  .roadmap-item h4{font-size:15px;margin-bottom:4px;}
+  .roadmap-item p{font-size:13.5px;color:var(--text-dim);}
+
+  footer{border-top:1px solid var(--border);padding:32px 0;text-align:center;color:var(--text-faint);font-size:13px;}
+  footer a{color:var(--text-dim);}
+  footer a:hover{color:var(--text);}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="../index.html">
+      <span class="logo-orbs"><span></span><span></span></span>
+      flick
+    </a>
+    <div class="nav-links">
+      <a href="../index.html">← Back to overview</a>
+      <a class="btn btn-accent" href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">Open Flick →</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <span class="eyebrow">Technical deep dive</span>
+  <h1>How Flick actually works.</h1>
+  <p>Full infrastructure, real on-chain transaction flow, security model, database schema and the exact user flows — for judges, reviewers and anyone who wants to see past the pitch.</p>
+</header>
+
+<section id="stack">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Stack</span>
+      <h2>What it's built with</h2>
+    </div>
+    <div class="grid grid-4">
+      <div class="card"><span class="tag">Frontend</span><h3>Next.js 14 · TypeScript</h3><p>App Router, Tailwind CSS, Framer Motion (transform/opacity-only animations), Zustand for client state.</p></div>
+      <div class="card"><span class="tag">Auth + wallet</span><h3>Particle Auth Core</h3><p>Email/Google login creates an embedded MPC wallet — no seed phrase, no extension.</p></div>
+      <div class="card"><span class="tag">Database</span><h3>Supabase (Postgres)</h3><p>Deny-by-default Row Level Security, service-role-only writes from server routes.</p></div>
+      <div class="card"><span class="tag">On-chain</span><h3>viem · Base Sepolia</h3><p>Direct EVM calls for the escrow relay: reading receipts, decoding events, signing transfers.</p></div>
+      <div class="card"><span class="tag">Deploy</span><h3>Vercel</h3><p>Serverless API routes, env-var secrets, zero servers to manage.</p></div>
+      <div class="card"><span class="tag">Testing</span><h3>Vitest</h3><p>TDD on every domain logic module — money, split, message, claim rules.</p></div>
+      <div class="card"><span class="tag">Token</span><h3>USDC (testnet)</h3><p>Circle's official Base Sepolia contract — real ERC-20 transfers, not simulated balances.</p></div>
+      <div class="card"><span class="tag">Verification</span><h3>Basescan</h3><p>Every transaction is a real hash you can look up independently.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Infrastructure</span>
+      <h2>Full system architecture</h2>
+      <p>Two request paths: the app's normal read/write path (top), and the real money-movement path (bottom) — kept deliberately separate.</p>
+    </div>
+
+    <div class="diagram">
+      <svg viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="rgba(245,247,251,0.35)" />
+          </marker>
+        </defs>
+
+        <rect x="20" y="20" width="150" height="56" rx="10" fill="#1a2032" stroke="rgba(255,255,255,0.12)"/>
+        <text x="95" y="42" text-anchor="middle" fill="#F5F7FB" font-family="Space Grotesk" font-weight="700" font-size="13">Browser</text>
+        <text x="95" y="60" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">Next.js client</text>
+
+        <rect x="300" y="20" width="160" height="56" rx="10" fill="#1a2032" stroke="rgba(91,141,239,0.4)"/>
+        <text x="380" y="42" text-anchor="middle" fill="#F5F7FB" font-family="Space Grotesk" font-weight="700" font-size="13">Vercel API routes</text>
+        <text x="380" y="60" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">/api/claims, /api/users</text>
+
+        <rect x="590" y="20" width="150" height="56" rx="10" fill="#1a2032" stroke="rgba(255,255,255,0.12)"/>
+        <text x="665" y="42" text-anchor="middle" fill="#F5F7FB" font-family="Space Grotesk" font-weight="700" font-size="13">Supabase</text>
+        <text x="665" y="60" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">Postgres + RLS</text>
+
+        <line x1="170" y1="48" x2="298" y2="48" stroke="rgba(245,247,251,0.35)" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="460" y1="48" x2="588" y2="48" stroke="rgba(245,247,251,0.35)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <text x="95" y="108" text-anchor="middle" fill="rgba(255,176,32,0.9)" font-family="JetBrains Mono" font-size="11">fetch()</text>
+        <text x="380" y="108" text-anchor="middle" fill="rgba(255,176,32,0.9)" font-family="JetBrains Mono" font-size="11">service role</text>
+
+        <rect x="20" y="150" width="180" height="60" rx="10" fill="#1a2032" stroke="rgba(255,176,32,0.4)"/>
+        <text x="110" y="174" text-anchor="middle" fill="#F5F7FB" font-family="Space Grotesk" font-weight="700" font-size="13">Particle Auth Core</text>
+        <text x="110" y="192" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">embedded MPC wallet</text>
+
+        <rect x="290" y="150" width="180" height="60" rx="10" fill="#1a2032" stroke="rgba(255,176,32,0.4)"/>
+        <text x="380" y="174" text-anchor="middle" fill="#F5F7FB" font-family="Space Grotesk" font-weight="700" font-size="13">getUserInfo RPC</text>
+        <text x="380" y="192" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">server-side session check</text>
+
+        <line x1="95" y1="76" x2="105" y2="148" stroke="rgba(255,176,32,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="380" y1="76" x2="380" y2="148" stroke="rgba(255,176,32,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <rect x="20" y="290" width="180" height="70" rx="10" fill="#1a2032" stroke="rgba(91,141,239,0.5)"/>
+        <text x="110" y="315" text-anchor="middle" fill="#F5F7FB" font-family="Space Grotesk" font-weight="700" font-size="13">Sender wallet</text>
+        <text x="110" y="333" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">signs real USDC transfer</text>
+        <text x="110" y="349" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">(client-side, viem)</text>
+
+        <rect x="290" y="290" width="180" height="70" rx="10" fill="#1a2032" stroke="rgba(52,211,153,0.5)"/>
+        <text x="380" y="315" text-anchor="middle" fill="#F5F7FB" font-family="Space Grotesk" font-weight="700" font-size="13">Escrow relay</text>
+        <text x="380" y="333" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">server-controlled EOA</text>
+        <text x="380" y="349" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">verifies + pays out</text>
+
+        <rect x="560" y="290" width="180" height="70" rx="10" fill="#1a2032" stroke="rgba(255,176,32,0.5)"/>
+        <text x="650" y="315" text-anchor="middle" fill="#F5F7FB" font-family="Space Grotesk" font-weight="700" font-size="13">Base Sepolia</text>
+        <text x="650" y="333" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">USDC contract</text>
+        <text x="650" y="349" text-anchor="middle" fill="rgba(245,247,251,0.5)" font-family="DM Sans" font-size="10">verifiable on Basescan</text>
+
+        <line x1="200" y1="325" x2="288" y2="325" stroke="rgba(245,247,251,0.35)" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="470" y1="325" x2="558" y2="325" stroke="rgba(245,247,251,0.35)" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <text x="244" y="315" text-anchor="middle" fill="rgba(91,141,239,0.9)" font-family="JetBrains Mono" font-size="10">USDC → escrow</text>
+        <text x="514" y="315" text-anchor="middle" fill="rgba(91,141,239,0.9)" font-family="JetBrains Mono" font-size="10">escrow → recipient</text>
+
+        <line x1="110" y1="220" x2="110" y2="288" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="460" y1="76" x2="600" y2="290" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="3 3"/>
+
+        <rect x="20" y="390" width="720" height="1" fill="rgba(255,255,255,0.08)"/>
+        <text x="20" y="415" fill="rgba(245,247,251,0.38)" font-family="DM Sans" font-size="11">Top row: normal app read/write path. Bottom row: real money movement — verified independently of the DB.</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section id="flows">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">User flows</span>
+      <h2>Screenshots from the live app</h2>
+      <p>Real screens from <code>flick-uxmaxx.vercel.app</code>, not mockups.</p>
+    </div>
+
+    <div class="flow-step">
+      <img src="../img/screen-login.png" alt="Flick login screen" />
+      <div>
+        <span class="step-num">1</span>
+        <h3>Login — no wallet talk</h3>
+        <p>Email or Google, nothing else. Behind the scenes, Particle Auth Core creates an embedded MPC wallet tied to that account — the user never sees a seed phrase or "connect wallet" prompt.</p>
+        <div class="tech-note">Client calls <code>connect()</code> → on success, <code>POST /api/users</code> registers <code>particle_user_id</code> in Supabase.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <img src="../img/screen-home.png" alt="Flick home screen with balance" />
+      <div>
+        <span class="step-num">2</span>
+        <h3>Home — one balance, any chain</h3>
+        <p>Base and Arbitrum balances converge into a single number. The public ticker at the bottom polls a CORS-open, PII-free aggregate endpoint every 5 seconds.</p>
+        <div class="tech-note"><code>GET /api/stats/flicks-count</code> — service-role read, exposes only a count.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <img src="../img/screen-send.png" alt="Flick send screen" />
+      <div>
+        <span class="step-num">3</span>
+        <h3>Send — the real transaction</h3>
+        <p>Amount, recipient, optional emoji/message, optional group split. Tapping "Flick" triggers a real USDC transfer from the sender's wallet to the escrow address — signed in the browser, not simulated.</p>
+        <div class="tech-note">Client: <code>useEthereum().sendTransaction()</code> (viem-encoded ERC-20 <code>transfer</code>) → server verifies the tx before creating the claim.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <img src="../img/screen-claim.png" alt="Flick claim screen" />
+      <div>
+        <span class="step-num">4</span>
+        <h3>Claim — gift-card mental model</h3>
+        <p>The recipient sees an amount and a message, not a wallet address. On claim, the escrow pays them directly on-chain — the claim only flips to "claimed" if that payment actually succeeds.</p>
+        <div class="tech-note"><code>POST /api/claims/[token]</code> → <code>sendUsdcFromEscrow()</code> → DB updated only after on-chain success.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="security">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Security model</span>
+      <h2>What's actually enforced</h2>
+    </div>
+    <ul class="checklist" style="max-width:680px;margin:0 auto;">
+      <li><span class="ck">✓</span><span><b>Server-side session verification</b> — every mutating request calls Particle's <code>getUserInfo</code> RPC to confirm the submitted user ID and token belong to a real, currently valid session. Verified live: fake/missing tokens get a hard <code>401</code>.</span></li>
+      <li><span class="ck">✓</span><span><b>Deny-by-default Row Level Security</b> on every table. Verified live with the public key: reads return empty arrays, writes get rejected with an explicit RLS violation. All real reads/writes go through server routes using the service role.</span></li>
+      <li><span class="ck">✓</span><span><b>On-chain verified transfers</b> — the backend never trusts a client-submitted transaction hash. It fetches the real receipt from a public RPC, decodes the ERC-20 <code>Transfer</code> event, and checks the recipient and amount before creating or completing a claim.</span></li>
+      <li><span class="ck">✓</span><span><b>Fail-closed payouts</b> — if the on-chain payout to a recipient fails, the claim stays "pending" instead of being marked claimed. No double-pay, no silent fund loss.</span></li>
+      <li><span class="ck">✓</span><span><b>No secrets in code</b> — private keys and service-role keys live only in Vercel environment variables, never committed, never sent to the client.</span></li>
+      <li><span class="ck">✓</span><span><b>Non-guessable claim links</b> — <code>claim_token</code> is 128 bits of cryptographic randomness, not a sequential ID.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="schema">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Data model</span>
+      <h2>Database schema</h2>
+      <p>Two tables, deliberately minimal.</p>
+    </div>
+    <div class="grid grid-2">
+      <div class="schema-card">
+        <h3>users</h3>
+        <table class="schema-table">
+          <tr><th>Column</th><th>Notes</th></tr>
+          <tr><td>id</td><td>uuid, primary key</td></tr>
+          <tr><td>particle_user_id</td><td>Particle's uuid, unique — the link to a real session</td></tr>
+          <tr><td>handle</td><td>email or fallback display name</td></tr>
+          <tr><td>created_at</td><td>timestamp</td></tr>
+        </table>
+      </div>
+      <div class="schema-card">
+        <h3>pending_claims</h3>
+        <table class="schema-table">
+          <tr><th>Column</th><th>Notes</th></tr>
+          <tr><td>id / claim_token</td><td>internal id vs. public unlinkable claim link</td></tr>
+          <tr><td>sender_id / claimed_by</td><td>foreign keys to users</td></tr>
+          <tr><td>amount / message / group_id</td><td>send details, group split key</td></tr>
+          <tr><td>status</td><td>pending / claimed / expired</td></tr>
+          <tr><td>chain</td><td>base-sepolia / arbitrum-sepolia</td></tr>
+          <tr><td>send_tx_hash</td><td>verified sender → escrow transaction</td></tr>
+          <tr><td>claim_tx_hash</td><td>verified escrow → recipient transaction</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Known limitations + roadmap</span>
+      <h2>What's next, honestly</h2>
+    </div>
+    <div style="max-width:680px;margin:0 auto;">
+      <div class="roadmap-item">
+        <span class="dot"></span>
+        <div><h4>Universal Account is mainnet-only today</h4><p>Particle's Universal Account SDK doesn't support testnet chain IDs yet. The testnet demo uses a transparent escrow relay instead — same UX, real transactions, different plumbing under the hood until testnet support lands.</p></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="dot"></span>
+        <div><h4>Wallet-connect for existing wallets</h4><p>Today every login creates a fresh Particle wallet. A real product needs to let users who already hold funds elsewhere connect their existing wallet instead of starting from zero.</p></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="dot"></span>
+        <div><h4>Real balance reads</h4><p>The home screen balance is currently a fixed example value — swapping in a live Universal Account balance read is the next real integration step.</p></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="dot"></span>
+        <div><h4>Rate limiting</h4><p>No request-rate limiting yet on the API routes — fine for a hackathon demo, necessary before any real traffic.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Built for UXmaxx Hackathon — Encode Club × Particle Network · <a href="../index.html">← Back to overview</a> · <a href="https://flick-uxmaxx.vercel.app" target="_blank" rel="noopener">flick-uxmaxx.vercel.app</a>
+  </div>
+</footer>
+
+</body>
+</html>
