@@ -154,7 +154,7 @@
 <header class="hero wrap">
   <span class="eyebrow">Technical deep dive</span>
   <h1>How Flick actually works.</h1>
-  <p>Full infrastructure, real on-chain transaction flow, security model, database schema and the exact user flows — for judges, reviewers and anyone who wants to see past the pitch.</p>
+  <p>Full infrastructure, real on-chain transaction flow, the DeepSeek-backed AI agent, security model, database schema and the exact user flows — for judges, reviewers and anyone who wants to see past the pitch.</p>
 </header>
 
 <section id="stack">
@@ -172,6 +172,8 @@
       <div class="card"><span class="tag">Testing</span><h3>Vitest</h3><p>TDD on every domain logic module — money, split, message, claim rules.</p></div>
       <div class="card"><span class="tag">Token</span><h3>USDC (testnet)</h3><p>Circle's official Base Sepolia contract — real ERC-20 transfers, not simulated balances.</p></div>
       <div class="card"><span class="tag">Verification</span><h3>Basescan</h3><p>Every transaction is a real hash you can look up independently.</p></div>
+      <div class="card"><span class="tag">AI agent</span><h3>DeepSeek chat/completions</h3><p>Parses free-text send requests into structured intent — amount, recipient, message, even uneven group splits — always reviewed by the user before anything is sent.</p></div>
+      <div class="card"><span class="tag">Localization</span><h3>Custom i18n (ES/EN)</h3><p>No external library — a small Context + dictionary lookup, browser-language auto-detection, instant client-side switching.</p></div>
     </div>
   </div>
 </section>
@@ -301,6 +303,36 @@
   </div>
 </section>
 
+<section id="agent">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Agentic layer</span>
+      <h2>Describe it, don't fill it out</h2>
+      <p>The differentiator: a DeepSeek-backed parser turns a plain sentence into the same structured fields the manual form uses — including uneven group splits inferred from context (e.g. "I already paid my share").</p>
+    </div>
+
+    <div class="diagram" style="overflow-x:visible;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;">
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">"split 30 between 3 friends, I already paid my share"</span>
+        <span style="color:var(--text-faint);">-&gt;</span>
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">verifyParticleSession()</span>
+        <span style="color:var(--text-faint);">-&gt;</span>
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">DeepSeek (json_object, temp 0.2)</span>
+        <span style="color:var(--text-faint);">-&gt;</span>
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">sanitizeParsedIntent()</span>
+        <span style="color:var(--text-faint);">-&gt;</span>
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">prefilled form, user confirms</span>
+      </div>
+    </div>
+
+    <div class="grid grid-3" style="margin-top:24px;">
+      <div class="card"><span class="tag">Never autonomous</span><h3>Prefill only, no execution</h3><p>The model never sends a transaction. It fills the same fields a human would, always editable, always confirmed by an explicit tap on "Flick".</p></div>
+      <div class="card"><span class="tag">Defensive by default</span><h3>Every field re-validated</h3><p><code>sanitizeParsedIntent()</code> re-checks type, range and shape of everything the model returns — the raw LLM output is never trusted or passed through.</p></div>
+      <div class="card"><span class="tag">Session-gated</span><h3>Auth before inference</h3><p>The endpoint verifies the Particle session server-side and rejects invalid callers with a 401 before spending a single DeepSeek token.</p></div>
+    </div>
+  </div>
+</section>
+
 <section id="security">
   <div class="wrap">
     <div class="section-head">
@@ -313,6 +345,7 @@
       <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>On-chain verified transfers</b> — the backend never trusts a client-submitted transaction hash. It fetches the real receipt from a public RPC, decodes the ERC-20 <code>Transfer</code> event, and checks the recipient and amount before creating or completing a claim.</span></li>
       <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Fail-closed payouts</b> — if the on-chain payout to a recipient fails, the claim stays "pending" instead of being marked claimed. No double-pay, no silent fund loss.</span></li>
       <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>No secrets in code</b> — private keys and service-role keys live only in Vercel environment variables, never committed, never sent to the client.</span></li>
+      <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>AI endpoint has the same guardrails</b> — <code>/api/ai/parse-send</code> verifies the caller’s session before calling DeepSeek, and never trusts the model’s raw JSON: every field is re-validated server-side before it can prefill anything.</span></li>
       <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg></span><span><b>Non-guessable claim links</b> — <code>claim_token</code> is 128 bits of cryptographic randomness, not a sequential ID.</span></li>
     </ul>
   </div>
@@ -375,6 +408,10 @@
       <div class="roadmap-item">
         <span class="dot"></span>
         <div><h4>Rate limiting</h4><p>No request-rate limiting yet on the API routes — fine for a hackathon demo, necessary before any real traffic.</p></div>
+      </div>
+      <div class="roadmap-item">
+        <span class="dot"></span>
+        <div><h4>x402 as an agent-to-agent layer</h4><p>Evaluated Coinbase's x402 protocol (HTTP 402 stablecoin micropayments for AI agents) as a complement to the human-facing DeepSeek parser — same "agent" theme, extended to agent-to-agent payments. Not implemented yet, a natural next step.</p></div>
       </div>
     </div>
   </div>
