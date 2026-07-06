@@ -386,6 +386,36 @@
   </div>
 </section>
 
+<section id="x402">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Agent-to-agent payments</span>
+      <h2>x402: when the payer is also an agent</h2>
+      <p>The DeepSeek parser above helps a <b>human</b> pay, always with a human confirming. This is the other half: a resource an <b>autonomous agent</b> can pay for by itself, using Coinbase's open x402 protocol (HTTP 402 + stablecoins) - no human in the loop at all.</p>
+    </div>
+
+    <div class="diagram" style="overflow-x:visible;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;">
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">GET /api/x402/insight</span>
+        <span style="color:var(--text-faint);">-&gt;</span>
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">402 Payment Required</span>
+        <span style="color:var(--text-faint);">-&gt;</span>
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">agent signs EIP-3009 (gasless)</span>
+        <span style="color:var(--text-faint);">-&gt;</span>
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">facilitator verify + settle</span>
+        <span style="color:var(--text-faint);">-&gt;</span>
+        <span class="card mono" style="padding:12px 16px;font-size:12px;">200, resource delivered</span>
+      </div>
+    </div>
+
+    <div class="grid grid-3" style="margin-top:24px;">
+      <div class="card"><span class="tag">No human in the loop</span><h3>A separate payer wallet</h3><p>A dedicated agent wallet - distinct from Flick's escrow - pays autonomously. It tops itself up from the escrow when its balance runs low, so the demo never depends on manual funding.</p></div>
+      <div class="card"><span class="tag">Real facilitator</span><h3>x402.org/facilitator</h3><p>Implemented by hand against the public facilitator instead of the official SDK, which requires Next 15+ as a peer dependency - Flick runs Next 14. The exact request schema was verified live against the facilitator before writing any code.</p></div>
+      <div class="card"><span class="tag">Independently verifiable</span><h3>Real settlement, real tx</h3><p>Every run settles a genuine on-chain USDC transfer on Base Sepolia via <code>transferWithAuthorization</code> (EIP-3009) - confirmed against the public RPC, not just a 200 response.</p></div>
+    </div>
+  </div>
+</section>
+
 <section id="roadmap">
   <div class="wrap">
     <div class="section-head">
@@ -395,7 +425,7 @@
     <div style="max-width:700px;margin:0 auto;">
       <div class="roadmap-item">
         <span class="dot"></span>
-        <div><h4>Universal Account is mainnet-only today</h4><p>Particle's Universal Account SDK doesn't support testnet chain IDs yet. The testnet demo uses a transparent escrow relay instead — same UX, real transactions, different plumbing under the hood until testnet support lands.</p></div>
+        <div><h4>Universal Account is mainnet-only today</h4><p>Particle's Universal Account SDK doesn't support testnet chain IDs yet — for either transfers or balance reads. The testnet demo uses a transparent escrow relay for sends, and a direct <code>balanceOf</code> read for the home screen balance, both real, both verifiable, different plumbing under the hood until testnet support lands in the SDK.</p></div>
       </div>
       <div class="roadmap-item">
         <span class="dot"></span>
@@ -403,15 +433,7 @@
       </div>
       <div class="roadmap-item">
         <span class="dot"></span>
-        <div><h4>Real balance reads</h4><p>The home screen balance is currently a fixed example value — swapping in a live Universal Account balance read is the next real integration step.</p></div>
-      </div>
-      <div class="roadmap-item">
-        <span class="dot"></span>
         <div><h4>Rate limiting</h4><p>No request-rate limiting yet on the API routes — fine for a hackathon demo, necessary before any real traffic.</p></div>
-      </div>
-      <div class="roadmap-item">
-        <span class="dot"></span>
-        <div><h4>x402 as an agent-to-agent layer</h4><p>Evaluated Coinbase's x402 protocol (HTTP 402 stablecoin micropayments for AI agents) as a complement to the human-facing DeepSeek parser — same "agent" theme, extended to agent-to-agent payments. Not implemented yet, a natural next step.</p></div>
       </div>
     </div>
   </div>
